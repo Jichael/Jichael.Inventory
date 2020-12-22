@@ -1,0 +1,1 @@
+# Silicom.Inventory
