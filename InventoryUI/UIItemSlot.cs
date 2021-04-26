@@ -1,8 +1,9 @@
+using CustomPackages.Silicom.Localization.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Inventory
+namespace CustomPackages.Silicom.Inventory.InventoryUI
 {
     public class UIItemSlot : MonoBehaviour
     {
@@ -20,7 +21,7 @@ namespace Inventory
         {
             AssignedItem = item;
             itemIcon.sprite = AssignedItem.itemSO.icon;
-            itemName.text = AssignedItem.itemSO.name;
+            itemName.text = AssignedItem.itemSO.Name;
 
             if (AssignedItem is HandHeldItem handHeldItem)
             {

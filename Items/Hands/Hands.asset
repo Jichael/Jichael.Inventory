@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1f4d62ea754473b9f036f1030a7e039, type: 3}
   m_Name: Hands
   m_EditorClassIdentifier: 
-  name: 
-  description: 
+  nameKey: Item_Hands_Name
+  needTranslation: 1
+  description: Item_Hands_Description
   icon: {fileID: 3286163911610860551, guid: 0bd38715592b9eb4a8ef07e6605141dc, type: 3}
-  category: 1
   weight: 0
   stackable: 0
   maxStack: 0

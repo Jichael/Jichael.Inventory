@@ -1,11 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using CustomPackages.Silicom.Core.Runtime;
+using CustomPackages.Silicom.Localization.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-namespace Inventory
+namespace CustomPackages.Silicom.Inventory.InventoryUI
 {
     public class HandHeldItemUI : MonoBehaviour
     {
@@ -35,6 +37,8 @@ namespace Inventory
 
         private Coroutine _showSlideCo;
 
+        public bool CanSwitchItem { get; set; } = true;
+
         private void Awake()
         {
             Instance = this;
@@ -61,7 +65,7 @@ namespace Inventory
         {
             slideShow.SetActive(true);
 
-            yield return new WaitForSeconds(2);
+            yield return Yielders.OneSecond;
             
             slideShow.SetActive(false);
         }
@@ -69,7 +73,10 @@ namespace Inventory
 
         private void PreviousItem(InputAction.CallbackContext ctx)
         {
+            if(!CanSwitchItem) return;
             if (ctx.ReadValue<float>() < 0) return;
+
+            if (handHeldItems.Count < 2) return;
             
             if(_showSlideCo != null) StopCoroutine(_showSlideCo);
             _showSlideCo = StartCoroutine(ShowSlideCo());
@@ -88,7 +95,10 @@ namespace Inventory
 
         private void NextItem(InputAction.CallbackContext ctx)
         {
+            if(!CanSwitchItem) return;
             if (ctx.ReadValue<float>() > 0) return;
+            
+            if (handHeldItems.Count < 2) return;
             
             if(_showSlideCo != null) StopCoroutine(_showSlideCo);
             _showSlideCo = StartCoroutine(ShowSlideCo());
@@ -109,7 +119,7 @@ namespace Inventory
         {
             HandHeldItem item = handHeldItems[index];
 
-            currentItemName.text = item.itemSO.name;
+            currentItemName.text = item.itemSO.Name;
             currentItemIcon.sprite = item.itemSO.icon;
 
             if (handHeldItems.Count != 1)
@@ -120,10 +130,10 @@ namespace Inventory
                 int nextIndex = _currentIndex + 1;
                 if (nextIndex > handHeldItems.Count - 1) nextIndex = 0;
                 
-                previousItemName.text = handHeldItems[prevIndex].itemSO.name;
+                previousItemName.text = handHeldItems[prevIndex].itemSO.Name;
                 previousItemIcon.sprite = handHeldItems[prevIndex].itemSO.icon;
                 
-                nextItemName.text = handHeldItems[nextIndex].itemSO.name;
+                nextItemName.text = handHeldItems[nextIndex].itemSO.Name;
                 nextItemIcon.sprite = handHeldItems[nextIndex].itemSO.icon;
             }
             
@@ -134,7 +144,7 @@ namespace Inventory
         
         private void OnItemAdded(Item item)
         {
-            if (item.itemSO.category == ItemCategory.HandHeld && item is HandHeldItem handHeldItem)
+            if (item.category == ItemCategory.HandHeld && item is HandHeldItem handHeldItem)
             {
                 handHeldItems.Add(handHeldItem);
             }
@@ -142,7 +152,7 @@ namespace Inventory
     
         private void OnItemRemoved(Item item)
         {
-            if (item.itemSO.category == ItemCategory.HandHeld && item is HandHeldItem handHeldItem)
+            if (item.category == ItemCategory.HandHeld && item is HandHeldItem handHeldItem)
             {
                 handHeldItems.Remove(handHeldItem);
                 if (handHeldItem.Held) _currentIndex = 0;

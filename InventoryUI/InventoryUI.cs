@@ -1,24 +1,25 @@
 using System;
 using System.Collections.Generic;
-using CustomPackages.Silicom.Player.CursorSystem;
-using CustomPackages.Silicom.Player.Players;
+using CustomPackages.Silicom.Localization.Runtime;
+using Silicom.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-namespace Inventory
+namespace CustomPackages.Silicom.Inventory.InventoryUI
 {
-    public class InventoryUI : MonoBehaviour
+    public class InventoryUI : UIInstance
     {
-
+    
+        public static InventoryUI Current { get; private set; }
+        
         [SerializeField] private InputAction toggleInventoryAction;
 
         [SerializeField] private Transform toolBox;
         [SerializeField] private Transform protections;
 
         [SerializeField] private TMP_Text capacityText;
-        
 
         [SerializeField] private UIItemSlot itemUITemplate;
 
@@ -30,19 +31,21 @@ namespace Inventory
         private UIItemSlot _selectedItem;
 
         private readonly List<UIItemSlot> _itemsUIToolbox = new List<UIItemSlot>();
-        private readonly List<UIItemSlot> _itemsUIProtections = new List<UIItemSlot>();
+        private readonly List<UIItemSlot> _itemsUIEquipment = new List<UIItemSlot>();
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
+            Current = this;
             toggleInventoryAction.Enable();
             toggleInventoryAction.performed += OnToggleInventory;
             Inventory.OnItemAdded += OnItemAdded;
             Inventory.OnItemRemoved += OnItemRemoved;
-            gameObject.SetActive(false);
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             Inventory.OnItemAdded -= OnItemAdded;
             Inventory.OnItemRemoved -= OnItemRemoved;
             
@@ -52,24 +55,7 @@ namespace Inventory
 
         private void OnToggleInventory(InputAction.CallbackContext ctx)
         {
-            ToggleInventory();
-        }
-
-        public void ToggleInventory()
-        {
-            bool opened = !gameObject.activeSelf;
-            gameObject.SetActive(opened);
-            
-            // TODO : rework
-            CursorManager.Instance.SetLockState(!opened);
-            if (opened)
-            {
-                InputsHandler.Instance.StopInputProcessing();
-            }
-            else
-            {
-                InputsHandler.Instance.StartInputProcessing();
-            }
+            Toggle();
         }
 
         private void OnEnable()
@@ -81,7 +67,7 @@ namespace Inventory
                 bool found = false;
                 for (int i = 0; i < _itemsUIToolbox.Count; i++)
                 {
-                    if (((HandHeldItem) _itemsUIToolbox[i].AssignedItem).Held)
+                    if (_itemsUIToolbox[i].AssignedItem is HandHeldItem {Held: true})
                     {
                         SetSelectedItem(_itemsUIToolbox[i]);
                         found = true;
@@ -90,9 +76,9 @@ namespace Inventory
                 }
                 if(!found) SetSelectedItem(_itemsUIToolbox[0]);
             }
-            else if (_itemsUIProtections.Count > 0)
+            else if (_itemsUIEquipment.Count > 0)
             {
-                SetSelectedItem(_itemsUIProtections[0]);
+                SetSelectedItem(_itemsUIEquipment[0]);
             }
         }
 
@@ -110,8 +96,8 @@ namespace Inventory
 
             if (_selectedItem)
             {
-                selectedItemName.text = _selectedItem.AssignedItem.itemSO.name;
-                selectedItemDescription.text = _selectedItem.AssignedItem.itemSO.description;
+                selectedItemName.text = _selectedItem.AssignedItem.itemSO.Name;
+                selectedItemDescription.text = LanguageManager.Instance.RequestValue(_selectedItem.AssignedItem.itemSO.description);
                 selectedItemIcon.sprite = _selectedItem.AssignedItem.itemSO.icon;
                 selectedItemWeight.text = $"Weight : {_selectedItem.AssignedItem.itemSO.weight.ToString()}";
                 item.Select();
@@ -126,75 +112,79 @@ namespace Inventory
         private void OnItemAdded(Item item)
         {
             UpdateCapacityText();
-            if (item.itemSO.category == ItemCategory.Other)
+
+            switch (item.category)
             {
-                
-            }
-            else if (item.itemSO.category == ItemCategory.HandHeld)
-            {
-                UIItemSlot itemUI = Instantiate(itemUITemplate, toolBox);
-                itemUI.AssignItem(item);
-                itemUI.button.onClick.AddListener(() => SetSelectedItem(itemUI));
-                _itemsUIToolbox.Add(itemUI);
-            }
-            else if (item.itemSO.category == ItemCategory.Protection)
-            {
-                UIItemSlot itemUI = Instantiate(itemUITemplate, protections);
-                itemUI.AssignItem(item);
-                itemUI.button.onClick.AddListener(() => SetSelectedItem(itemUI));
-                _itemsUIProtections.Add(itemUI);
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException();
+                case ItemCategory.HandHeld: case ItemCategory.ToolBox:
+                {
+                    UIItemSlot itemUI = Instantiate(itemUITemplate, toolBox);
+                    itemUI.AssignItem(item);
+                    itemUI.button.onClick.AddListener(() => SetSelectedItem(itemUI));
+                    _itemsUIToolbox.Add(itemUI);
+                    break;
+                }
+                case ItemCategory.Equipment:
+                {
+                    UIItemSlot itemUI = Instantiate(itemUITemplate, protections);
+                    itemUI.AssignItem(item);
+                    itemUI.button.onClick.AddListener(() => SetSelectedItem(itemUI));
+                    _itemsUIEquipment.Add(itemUI);
+                    break;
+                }
+                case ItemCategory.Other:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
     
         private void OnItemRemoved(Item item)
         {
             UpdateCapacityText();
-            if (item.itemSO.category == ItemCategory.Other)
+            switch (item.category)
             {
-                
-            }
-            else if (item.itemSO.category == ItemCategory.HandHeld)
-            {
-                bool found = false;
-                for (int i = 0; i < _itemsUIToolbox.Count; i++)
+                case ItemCategory.HandHeld: case ItemCategory.ToolBox:
                 {
-                    if (_itemsUIToolbox[i].AssignedItem != item) continue;
-                    _itemsUIToolbox[i].ResetSlot();
-                    _itemsUIToolbox.RemoveAt(i);
-                    found = true;
+                    bool found = false;
+                    for (int i = 0; i < _itemsUIToolbox.Count; i++)
+                    {
+                        if (_itemsUIToolbox[i].AssignedItem != item) continue;
+                        _itemsUIToolbox[i].ResetSlot();
+                        _itemsUIToolbox.RemoveAt(i);
+                        found = true;
+                        break;
+                    }
+
+                    if (!found)
+                    {
+                        Debug.LogError("Should not get here !", this);
+                    }
+
                     break;
                 }
+                case ItemCategory.Equipment:
+                {
+                    bool found = false;
+                    for (int i = 0; i < _itemsUIEquipment.Count; i++)
+                    {
+                        if (_itemsUIEquipment[i].AssignedItem != item) continue;
+                        _itemsUIEquipment[i].ResetSlot();
+                        _itemsUIEquipment.RemoveAt(i);
+                        found = true;
+                        break;
+                    }
 
-                if (!found)
-                {
-                    Debug.LogError("Should not get here !", this);
-                }
-                
-            }
-            else if (item.itemSO.category == ItemCategory.Protection)
-            {
-                bool found = false;
-                for (int i = 0; i < _itemsUIProtections.Count; i++)
-                {
-                    if (_itemsUIProtections[i].AssignedItem != item) continue;
-                    _itemsUIProtections[i].ResetSlot();
-                    _itemsUIProtections.RemoveAt(i);
-                    found = true;
+                    if (!found)
+                    {
+                        Debug.LogError("Should not get here !", this);
+                    }
+
                     break;
                 }
-
-                if (!found)
-                {
-                    Debug.LogError("Should not get here !", this);
-                }
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException();
+                case ItemCategory.Other:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 

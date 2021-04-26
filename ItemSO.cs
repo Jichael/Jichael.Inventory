@@ -1,24 +1,31 @@
+using CustomPackages.Silicom.Localization.Runtime;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-namespace Inventory
+namespace CustomPackages.Silicom.Inventory
 {
     [CreateAssetMenu(fileName = "NewItem", menuName = "Inventory/Item", order = 0)]
     public class ItemSO : ScriptableObject
     {
-        public new string name;
+        public string Name
+        {
+            get
+            {
+                if (needTranslation)
+                {
+                    _name = LanguageManager.Instance.RequestValue(nameKey);
+                    needTranslation = false;
+                }
+                return _name;
+            }
+        }
+        private string _name;
+        [SerializeField] private string nameKey;
+        public bool needTranslation = true;
         public string description;
         public Sprite icon;
-        public ItemCategory category;
         public int weight;
         public bool stackable;
         [ShowIf(nameof(stackable))] public int maxStack;
-    }
-    
-    public enum ItemCategory
-    {
-        Other,
-        HandHeld,
-        Protection
     }
 }

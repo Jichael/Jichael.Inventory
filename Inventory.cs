@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Inventory
+namespace CustomPackages.Silicom.Inventory
 {
     public class Inventory : MonoBehaviour
     {
@@ -54,6 +54,22 @@ namespace Inventory
             CurrentWeight -= item.itemSO.weight;
             OnItemRemoved?.Invoke(item);
             item.Drop();
+        }
+
+        public bool Contains(Item item)
+        {
+            return _items.Contains(item);
+        }
+
+        public bool CheckItemList(Item[] item, int minRequiredValue)
+        {
+            int found = 0;
+            for (int i = 0; i < item.Length; i++)
+            {
+                if (Contains(item[i])) found++;
+            }
+
+            return found >= minRequiredValue;
         }
     }
 }
