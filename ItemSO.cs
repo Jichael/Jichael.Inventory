@@ -11,17 +11,17 @@ namespace CustomPackages.Silicom.Inventory
         {
             get
             {
-                if (needTranslation)
+                if (_needTranslation)
                 {
                     _name = LanguageManager.Instance.RequestValue(nameKey);
-                    needTranslation = false;
+                    _needTranslation = false;
                 }
                 return _name;
             }
         }
         private string _name;
         [SerializeField] private string nameKey;
-        public bool needTranslation = true;
+        private bool _needTranslation = true;
         public string description;
         public Sprite icon;
         public int weight;
